@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Editor local de escenas para ficción interactiva."
+    />
+    <meta name="theme-color" content="#11121a" />
+    <title>Crowther — editor de ficción interactiva</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/pwa-icon-192.png" />
+    <link rel="apple-touch-icon" href="assets/pwa-icon-180.png" />
+    <link rel="stylesheet" href="vendor/quill/quill.snow.css?v=2026-11-07-03" />
+<link rel="stylesheet" href="styles.css?v=2026-11-12-15" />
+    <script>
+      // Los módulos ES necesitan un servidor HTTP en Chrome/Edge. Este aviso se
+      // ejecuta incluso cuando el navegador bloquea el módulo al abrir file:///.
+      if (location.protocol === "file:") {
+        document.documentElement.classList.add("opened-from-file");
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#stage-editor">Saltar al lienzo</a>
+    <p class="file-protocol-warning" role="alert">
+      Has abierto el archivo directamente. Para que funcionen la carga y el guardado, ejecuta <strong>Abrir Escena Viva.cmd</strong> en esta carpeta.
+    </p>
+
+    <header class="topbar">
+      <div class="brand" aria-label="Crowther">
+        <img class="brand-mark brand-logo" src="Logo/Logo.svg" alt="" aria-hidden="true" />
+        <div>
+          <p class="eyebrow">Librojuego digital</p>
+          <h1>Crowther</h1>
+        </div>
+      </div>
+
+      <div class="project-meta">
+        <button id="about-button" class="button button-ghost about-topbar-button" type="button">
+          <span aria-hidden="true">ⓘ</span> About
+        </button>
+        <p id="save-status" class="save-status" aria-live="polite">Autoguardado activo</p>
+        <div class="project-file-actions" aria-label="Acciones del proyecto">
+          <button id="new-project-button" class="button button-ghost" type="button">
+            <span aria-hidden="true">＋</span> Nuevo proyecto
+          </button>
+          <label class="button button-ghost import-button" for="import-input">
+            Importar proyecto
+            <input id="import-input" type="file" accept="application/json,.json" hidden />
+          </label>
+          <button id="export-button" class="button button-ghost" type="button">
+            Exportar proyecto
+          </button>
+          <button id="export-web-button" class="button button-ghost" type="button">
+            <span aria-hidden="true">⇩</span> Exportar web
+          </button>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="preview-button" class="button button-secondary" type="button">
+          <span aria-hidden="true">▷</span> Probar
+        </button>
+      </div>
+    </header>
+
+    <main id="workspace" class="workspace">
+      <aside id="explorer-panel" class="panel asset-panel sidebar-panel" aria-label="Explorador y recursos del proyecto">
+        <div class="sidebar-scroll">
+          <div class="canvas-heading explorer-panel-heading">
+            <h2 id="explorer-panel-heading">Explorador</h2>
+          </div>
+          <section class="sidebar-section explorer-section" aria-labelledby="explorer-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow" id="explorer-heading">Explorador</p>
+              </div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="explorer" aria-expanded="true" aria-controls="explorer-section-content" aria-label="Plegar Explorador" title="Plegar Explorador">▾</button>
+            </div>
+            <div id="explorer-section-content" class="collapsible-section-content">
+              <div class="explorer-actions" aria-label="Crear contenido del proyecto">
+                <button id="new-folder" class="explorer-action" type="button">
+                  <span aria-hidden="true">▱</span> Carpeta
+                </button>
+              </div>
+
+              <div id="module-tree" class="module-tree" role="tree" aria-live="polite" aria-label="Escenas del proyecto">
+                <p class="tree-empty">Las escenas aparecerán bajo <strong>main</strong>.</p>
+              </div>
+              <p class="helper-text">Pulsa ▶ para elegir la escena inicial. Doble clic para renombrar; arrastra una escena sobre otra para anidarla o sobre <strong>main</strong> para devolverla al nivel raíz.</p>
+            </div>
+          </section>
+
+          <section class="sidebar-section graph-section" aria-labelledby="graph-heading">
+            <div class="section-label-row">
+              <div>
+                <p class="eyebrow" id="graph-heading">Árbol de decisiones</p>
+              </div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="graph" aria-expanded="true" aria-controls="graph-section-content" aria-label="Plegar árbol de decisiones" title="Plegar árbol de decisiones">▾</button>
+            </div>
+            <div id="graph-section-content" class="collapsible-section-content">
+              <div class="graph-toolbar" role="toolbar" aria-label="Controles del flujo del proyecto">
+                <button id="graph-zoom-out" type="button" aria-label="Alejar el flujo" title="Alejar">−</button>
+                <button id="graph-zoom-in" type="button" aria-label="Acercar el flujo" title="Acercar">+</button>
+                <button id="graph-fit" type="button" aria-label="Ajustar el flujo a la ventana" title="Ajustar">Ajustar</button>
+                <button id="graph-export-svg" type="button" title="Exportar vectorial SVG">SVG</button>
+                <button id="graph-print" type="button" title="Imprimir o guardar como PDF">Imprimir / PDF</button>
+                <span class="graph-toolbar-spacer"></span>
+                <button id="graph-expand" class="overlay-expand-control" type="button" title="Ampliar árbol de decisiones" aria-label="Ampliar árbol de decisiones" aria-expanded="false">⛶</button>
+              </div>
+              <div id="module-graph" class="module-graph" role="region" aria-label="Grafo de escenas y decisiones">
+                <p class="graph-empty">Aquí se mostrará el recorrido entre escenas.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="sidebar-section resources-section" aria-labelledby="assets-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Recursos</p>
+              </div>
+              <div class="resource-heading-actions">
+                <span id="asset-count" class="count-pill">0</span>
+                <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="resources" aria-expanded="true" aria-controls="resources-section-content" aria-label="Plegar recursos" title="Plegar recursos">▾</button>
+              </div>
+            </div>
+
+            <div id="resources-section-content" class="collapsible-section-content">
+              <label id="asset-drop-zone" class="drop-zone" for="asset-input">
+                <span class="drop-icon" aria-hidden="true">↥</span>
+                <strong>Suelta una imagen, sonido o vídeo.</strong>
+                <span>o selecciona imágenes, archivos MP3 o vídeos compatibles desde tu equipo: se añadirán a la escena</span>
+                <input id="asset-input" type="file" accept="image/*,.mp3,audio/mpeg,video/*,.mp4,.m4v,.webm,.ogv,.mov" multiple hidden />
+              </label>
+
+              <p class="helper-text">Los recursos se guardan solo en la escena seleccionada. Cambia de pestaña para consultar los de otra escena; la × quita el recurso de esta escena.</p>
+              <div class="asset-pagination" aria-label="Paginación de recursos">
+                <label for="asset-page-size">Por página</label>
+                <select id="asset-page-size" aria-label="Recursos por página">
+                  <option value="2">2</option>
+                  <option value="4" selected>4</option>
+                  <option value="10">10</option>
+                </select>
+                <button id="asset-page-prev" type="button" aria-label="Página anterior" title="Página anterior">‹</button>
+                <span id="asset-page-status" aria-live="polite">0 / 0</span>
+                <button id="asset-page-next" type="button" aria-label="Página siguiente" title="Página siguiente">›</button>
+              </div>
+              <div id="asset-module-tabs" class="asset-module-tabs" role="tablist" aria-label="Escena cuyos recursos se están viendo" data-asset-module-tabs></div>
+              <div id="asset-list" class="asset-list" aria-live="polite"></div>
+              <section id="layer-inspector" class="sidebar-section layer-inspector" aria-labelledby="layer-heading">
+                <div class="section-label-row">
+                  <h3 id="layer-heading">Capa seleccionada</h3>
+                  <span id="selected-layer-name" class="muted">Ninguna</span>
+                </div>
+                <div class="inspector-grid">
+                  <label>
+                    <span>X · %</span>
+                    <input id="layer-x" type="number" min="0" max="100" step="0.1" disabled />
+                  </label>
+                  <label>
+                    <span>Y · %</span>
+                    <input id="layer-y" type="number" min="0" max="100" step="0.1" disabled />
+                  </label>
+                  <label>
+                    <span>Ancho proporcional · %</span>
+                    <input id="layer-width" type="number" min="0.5" max="10000" step="0.1" disabled />
+                  </label>
+                  <label class="wide-field">
+                    <span>Texto alternativo</span>
+                    <input id="layer-alt" type="text" disabled />
+                  </label>
+                  <div class="layer-size-actions wide-field">
+                    <button id="layer-natural-size" class="button button-ghost" type="button" disabled>Tamaño real</button>
+                    <button id="layer-fit-stage" class="button button-ghost" type="button" disabled>Ajustar al lienzo</button>
+                  </div>
+                </div>
+                <p class="helper-text">Arrastra el interior para moverla. Los cuatro puntos de las esquinas cambian el tamaño sin deformarla. Mayús + flecha desplaza más.</p>
+              </section>
+            </div>
+          </section>
+
+          <section class="sidebar-section project-notes-section" aria-labelledby="project-notes-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow" id="project-notes-heading">Notas del proyecto</p>
+              </div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="project-notes" aria-expanded="true" aria-controls="project-notes-section-content" aria-label="Plegar notas del proyecto" title="Plegar notas del proyecto">▾</button>
+            </div>
+            <div id="project-notes-section-content" class="collapsible-section-content">
+              <div class="rich-text-field project-notes-field">
+                <div id="project-notes-toolbar" class="rich-toolbar" aria-label="Formato de las notas del proyecto">
+                  <span class="ql-formats">
+                    <select class="ql-header" aria-label="Estilo de párrafo">
+                      <option selected></option><option value="1">Título</option><option value="2">Subtítulo</option>
+                    </select>
+                  </span>
+                  <span class="ql-formats">
+                    <button class="ql-bold" type="button" aria-label="Negrita"></button>
+                    <button class="ql-italic" type="button" aria-label="Cursiva"></button>
+                    <button class="ql-underline" type="button" aria-label="Subrayado"></button>
+                    <button class="ql-background" type="button" value="#f7d471" aria-label="Resaltar"></button>
+                  </span>
+                  <span class="ql-formats">
+                    <button class="ql-list" type="button" value="bullet" aria-label="Lista con viñetas"></button>
+                    <button class="ql-list" type="button" value="ordered" aria-label="Lista numerada"></button>
+                    <button class="ql-blockquote" type="button" aria-label="Cita"></button>
+                    <button class="ql-link" type="button" aria-label="Enlace"></button>
+                    <button class="ql-clean" type="button" aria-label="Quitar formato"></button>
+                  </span>
+                </div>
+                <div id="project-notes-editor" class="rich-editor" data-editor-label="Notas del proyecto" lang="und" dir="auto"></div>
+              </div>
+              <p class="helper-text">Se incluyen al exportar el proyecto y en los archivos web.</p>
+            </div>
+          </section>
+          <section class="sidebar-section statistics-section" aria-labelledby="statistics-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow" id="statistics-heading">Estadísticas</p>
+              </div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="statistics" aria-expanded="true" aria-controls="statistics-section-content" aria-label="Plegar estadísticas" title="Plegar estadísticas">▾</button>
+            </div>
+            <div id="statistics-section-content" class="collapsible-section-content">
+              <label class="full-field statistics-selector">
+                <span>Estadística</span>
+                <select id="statistics-select" aria-label="Estadística que se mostrará">
+                  <option value="final-types">Tipos de finales</option>
+                  <option value="module-count">Escenas totales del juego</option>
+                </select>
+              </label>
+              <div id="statistics-chart" class="statistics-chart"></div>
+              <p id="statistics-summary" class="statistics-summary"></p>
+              <p class="helper-text statistics-help">Las escenas cuentan partes jugables, no carpetas.</p>
+            </div>
+          </section>
+
+          <section class="sidebar-section templates-section" aria-labelledby="templates-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow" id="templates-heading">Plantillas</p>
+              </div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="templates" aria-expanded="true" aria-controls="templates-section-content" aria-label="Plegar plantillas" title="Plegar plantillas">▾</button>
+            </div>
+            <div id="templates-section-content" class="collapsible-section-content">
+              <label class="full-field template-name-field">
+                <span>Nombre de la plantilla</span>
+                <input id="template-name" type="text" maxlength="100" placeholder="Ej.: Aventura pirata" autocomplete="off" />
+              </label>
+              <button id="template-save" class="button button-primary template-save-button" type="button">Guardar plantilla</button>
+              <p class="helper-text">Guarda el juego completo en este navegador: escenas, notas y recursos.</p>
+              <label class="full-field template-picker-field">
+                <span>Plantillas guardadas</span>
+                <select id="template-select" aria-label="Plantilla guardada">
+                  <option value="">No hay plantillas guardadas</option>
+                </select>
+              </label>
+              <div class="template-actions">
+                <button id="template-load" class="button button-ghost" type="button" disabled>Cargar</button>
+                <button id="template-download" class="button button-ghost" type="button" disabled>Paquete web</button>
+                <button id="template-delete" class="button button-ghost" type="button" disabled>Eliminar</button>
+              </div>
+              <p id="template-status" class="helper-text template-status" role="status" aria-live="polite">Las plantillas se guardan localmente y se pueden descargar como paquete web.</p>
+            </div>
+          </section>
+
+          <section class="sidebar-section character-sheet-section" aria-labelledby="character-sheet-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow" id="character-sheet-heading">Ficha de personaje</p></div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="character-sheet" aria-expanded="true" aria-controls="character-sheet-content" aria-label="Plegar ficha de personaje" title="Plegar ficha de personaje">▾</button>
+            </div>
+            <div id="character-sheet-content" class="collapsible-section-content">
+              <div class="character-sheet-create-row">
+                <label class="full-field" for="character-attribute-name"><span>Atributo</span><input id="character-attribute-name" type="text" maxlength="60" placeholder="Fuerza, Magia, Defensa…" /></label>
+                <label class="full-field" for="character-attribute-initial"><span>Valor inicial</span><input id="character-attribute-initial" type="number" step="any" value="0" /></label>
+                <button id="add-character-attribute" class="icon-button" type="button" aria-label="Añadir atributo de personaje" title="Añadir atributo">＋</button>
+              </div>
+              <div id="character-attribute-list" class="character-attribute-list" aria-label="Atributos de la ficha de personaje"></div>
+              <label class="full-field character-points-field" for="character-distributable-points"><span>Puntos distribuibles</span><input id="character-distributable-points" type="number" min="0" max="100000" step="1" value="0" /></label>
+              <div class="character-progression-heading"><strong>Progreso del personaje</strong><button id="add-character-progression" class="icon-button" type="button" aria-label="Añadir regla de progreso" title="Añadir regla">＋</button></div>
+              <div id="character-progression-list" class="character-progression-list" aria-label="Reglas de progreso"></div>
+              <p class="helper-text">El total de escenas se calcula automáticamente; también puedes conceder progreso por combates ganados y quiz resueltos.</p>
+            </div>
+          </section>
+
+          <section class="sidebar-section scenes-general-section" aria-labelledby="scenes-general-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow" id="scenes-general-heading">Escenas</p></div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="scenes-general" aria-expanded="true" aria-controls="scenes-general-content" aria-label="Plegar escenas" title="Plegar escenas">▾</button>
+            </div>
+            <div id="scenes-general-content" class="collapsible-section-content">
+              <p class="helper-text">Define una imagen y una animación de entrada comunes para las escenas, salvo las que configures como excepción.</p>
+              <label class="full-field final-type-field" for="project-background-image">
+                <span>Imagen de fondo general</span>
+                <select id="project-background-image" aria-label="Imagen de fondo general del proyecto">
+                  <option value="">Ninguna</option>
+                </select>
+              </label>
+              <label class="canvas-background-global-option">
+                <input id="canvas-background-all-modules" type="checkbox" />
+                <span>Aplicar a todas las escenas</span>
+              </label>
+              <label class="full-field final-type-field" for="project-scene-transition">
+                <span>Animación de entrada general</span>
+                <select id="project-scene-transition" aria-label="Animación de entrada general de las escenas">
+                  <option value="none">Ninguna</option>
+                  <option value="fade-black">Fundido desde negro</option>
+                  <option value="fade-white">Fundido desde blanco</option>
+                  <option value="crossfade">Fundido cruzado (superposición)</option>
+                  <option value="slide-right">Desplazamiento desde la derecha</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="sidebar-section inventory-section" aria-labelledby="inventory-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow" id="inventory-heading">Inventario</p></div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="inventory" aria-expanded="true" aria-controls="inventory-content" aria-label="Plegar inventario" title="Plegar inventario">▾</button>
+            </div>
+            <div id="inventory-content" class="collapsible-section-content">
+            <label class="full-field inventory-grid-field" for="inventory-grid-select">
+              <span>Espacios del inventario</span>
+              <select id="inventory-grid-select" aria-label="Capacidad y forma del inventario"></select>
+            </label>
+            <p id="inventory-grid-summary" class="inventory-grid-summary" aria-live="polite">15 espacios · 5 × 3</p>
+            <div id="inventory-grid-board" class="inventory-grid-board" role="grid" aria-label="Cuadrícula del inventario"></div>
+<label class="full-field inventory-grid-field" for="inventory-hint-capacity">
+<span>Espacios de pistas</span>
+<select id="inventory-hint-capacity" aria-label="Capacidad de pistas"></select>
+</label>
+<p id="inventory-hint-summary" class="inventory-grid-summary" aria-live="polite">0 de 10 pistas</p>
+<div id="inventory-hints-board" class="inventory-hints-board" aria-label="Espacios de pistas encontrados"></div>
+<h3 class="inventory-notes-heading">Notas</h3>
+<p class="helper-text">Notas privadas de la partida, disponibles al pulsar «Probar»; no se guardan con el proyecto.</p>
+<div class="rich-text-field inventory-notes-field">
+<div id="inventory-notes-toolbar" class="rich-toolbar" aria-label="Formato de las notas del jugador">
+<span class="ql-formats"><button class="ql-bold" type="button" aria-label="Negrita"></button><button class="ql-italic" type="button" aria-label="Cursiva"></button><button class="ql-list" type="button" value="bullet" aria-label="Lista con viñetas"></button><button class="ql-link" type="button" aria-label="Enlace"></button></span>
+</div>
+<div id="inventory-notes-editor" class="inventory-notes-editor" aria-label="Notas libres del jugador"></div>
+</div>
+            </div>
+          </section>
+
+          <section class="sidebar-section adventure-map-section" aria-labelledby="adventure-map-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow" id="adventure-map-heading">Mapa</p></div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="map" aria-expanded="true" aria-controls="adventure-map-content" aria-label="Plegar mapa" title="Plegar mapa">▾</button>
+            </div>
+            <div id="adventure-map-content" class="collapsible-section-content">
+              <label class="full-field final-type-field" for="map-grid-size">
+                <span>Cuadrícula cuadrada</span>
+                <select id="map-grid-size" aria-label="Tamaño de la cuadrícula del mapa"></select>
+              </label>
+              <p id="map-grid-summary" class="inventory-grid-summary" aria-live="polite">5 × 5 · 25 casillas</p>
+              <div id="map-grid-board" class="map-grid-board" role="grid" aria-label="Cuadrícula de destinos del mapa"></div>
+              <div class="map-cell-editor">
+                <p class="map-cell-coordinate" id="map-cell-coordinate">Casilla 1, 1</p>
+                <label class="full-field" for="map-cell-module-number">
+                  <span>Escena de destino</span>
+                  <input id="map-cell-module-number" type="number" min="1" max="9999" step="1" placeholder="Sin asignar" />
+                </label>
+                <p id="map-cell-target-status" class="helper-text map-cell-target-status" aria-live="polite">Sin escena asignada.</p>
+                <label class="checkbox-option map-cell-start-option" for="map-cell-initially-unlocked">
+                  <input id="map-cell-initially-unlocked" type="checkbox" />
+                  <span>Disponible desde el inicio</span>
+                </label>
+              </div>
+              <label class="full-field final-type-field" for="map-image-select">
+                <span>Fondo del mapa (opcional)</span>
+                <select id="map-image-select" aria-label="Fondo gráfico opcional del mapa"></select>
+              </label>
+              <p class="helper-text">La cuadrícula es invisible durante la partida. Marca casillas iniciales y asigna una escena a cada destino. Al pulsar el icono Mapa, la ilustración aparece como miniatura solo en la casilla de su escena. Si se usa también como fondo, se mostrará únicamente en esa casilla.</p>
+            </div>
+          </section>
+          <section class="sidebar-section object-attribute-definitions-section" aria-labelledby="object-attribute-definitions-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow" id="object-attribute-definitions-heading">Objetos</p></div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="object-attributes" aria-expanded="true" aria-controls="object-attributes-content" aria-label="Plegar objetos" title="Plegar objetos">▾</button>
+            </div>
+            <div id="object-attributes-content" class="collapsible-section-content">
+              <div class="object-attribute-create-row">
+                <label class="full-field" for="object-attribute-name">
+                  <span>Nuevo atributo</span>
+                  <input id="object-attribute-name" type="text" maxlength="60" placeholder="Defensa, Veneno, Daño…" />
+                </label>
+                <button id="add-object-attribute" class="icon-button" type="button" aria-label="Añadir atributo de objeto" title="Añadir atributo">＋</button>
+              </div>
+              <div id="object-attribute-definition-list" class="object-attribute-definition-list" aria-label="Atributos disponibles para los objetos"></div>
+              <p class="helper-text">Define aquí los atributos que luego podrás asignar a las imágenes usadas como objetos.</p>
+            </div>
+          </section>
+          <section class="sidebar-section plugins-section" aria-labelledby="plugins-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow" id="plugins-heading">Plugins</p></div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="plugins" aria-expanded="true" aria-controls="plugins-content" aria-label="Plegar plugins" title="Plegar plugins">▾</button>
+            </div>
+            <div id="plugins-content" class="collapsible-section-content">
+              <p class="helper-text">Sección preparada; contenido por definir.</p>
+            </div>
+          </section>
+        </div>
+        <button id="toggle-explorer-panel" class="panel-edge-toggle panel-edge-toggle-explorer" type="button" data-workspace-panel-toggle="explorer" aria-expanded="true" aria-controls="explorer-panel" aria-label="Ocultar explorador" title="Ocultar explorador">
+          <span class="workspace-panel-toggle-icon" aria-hidden="true">◂</span>
+        </button>
+
+      </aside>
+
+      <section class="canvas-column" aria-labelledby="canvas-heading">
+        <div class="canvas-heading">
+          <div>
+            <h2 id="canvas-heading">Escenario</h2>
+          </div>
+        </div>
+        <div class="module-tabs-strip">
+          <div id="module-tabs" class="module-tabs" role="tablist" aria-label="Escenas abiertas">
+            <p class="module-tabs-empty">Abre una escena desde el explorador.</p>
+          </div>
+          <div class="module-tabs-pagination" role="group" aria-label="Paginación de escenas abiertas">
+            <button id="module-tabs-prev" class="module-tabs-page-button" type="button" aria-label="Mostrar pestañas anteriores" title="Pestañas anteriores" aria-controls="module-tabs" hidden>‹</button>
+            <button id="module-tabs-next" class="module-tabs-page-button" type="button" aria-label="Mostrar más pestañas" title="Más pestañas" aria-controls="module-tabs" hidden>›</button>
+          </div>
+        </div>
+
+        <div id="game-preview" class="game-preview is-editing">
+          <div
+            id="stage-editor"
+            class="stage-editor"
+            tabindex="0"
+            aria-describedby="keyboard-movement-hint"
+            aria-label="Lienzo de la escena. Selecciona una imagen y desplázala con las flechas del teclado; Mayús acelera. También puedes arrastrar y redimensionar las imágenes proporcionalmente."
+          >
+            <img id="stage-background" class="stage-background" alt="" aria-hidden="true" hidden />
+            <div id="stage-layers" class="stage-layers"></div>
+<div id="stage-columns" class="stage-columns" aria-hidden="true"></div>
+            <div id="dialogue-layer" class="dialogue-layer" aria-label="Cajas de diálogo"></div>
+            <div id="alignment-guides" class="alignment-guides" aria-hidden="true"></div>
+            <div class="stage-vignette" aria-hidden="true"></div>
+            <section id="hint-overlay" class="hint-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="hint-overlay-heading" hidden>
+              <header class="hint-overlay-header">
+                <h2 id="hint-overlay-heading">Pista</h2>
+                <button id="hint-overlay-close" class="icon-button hint-text-remove hint-overlay-close" type="button" aria-label="Cerrar pista" title="Cerrar">×</button>
+              </header>
+              <div id="hint-overlay-content" class="hint-overlay-content"></div>
+            </section>
+            <button id="inventory-toggle" class="inventory-toggle" type="button" aria-label="Abrir inventario" title="Abrir inventario" aria-controls="inventory-panel" aria-expanded="false">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14"/><rect x="9.5" y="7.5" width="13" height="17" rx="1.5"/><path d="M12.5 12h7M12.5 16h7M12.5 20h4"/></svg>
+            </button>
+            <button id="character-toggle" class="character-toggle" type="button" aria-label="Ver personaje" title="Ver personaje" aria-controls="character-panel" aria-expanded="false">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14"/><circle cx="16" cy="9.5" r="3.2"/><path d="M10.5 24v-5.2a5.5 5.5 0 0 1 11 0V24M8.5 24h15"/></svg>
+            </button>
+            <button id="pencil-toggle" class="pencil-toggle" type="button" aria-label="Abrir pistas y notas" title="Abrir pistas y notas" aria-controls="pencil-panel" aria-expanded="false">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14"/><path d="m10 21 1.2-4.2L20.8 7.2a2 2 0 0 1 2.8 2.8l-9.6 9.6L10 21Z"/><path d="m18.8 9.2 4 4M10 21l4.2-1.2"/></svg>
+            </button>
+            <button id="map-toggle" class="map-toggle" type="button" aria-label="Abrir mapa" title="Abrir mapa" aria-controls="map-panel" aria-expanded="false">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14"/><ellipse cx="16" cy="16" rx="6.3" ry="14"/><path d="M2.5 12h27M2.5 20h27"/></svg>
+            </button>
+            <section id="inventory-panel" class="inventory-panel" aria-label="Inventario" aria-hidden="true" hidden>
+              <header class="inventory-panel-header has-close">
+                <h2>Inventario</h2>
+                <p id="inventory-message" class="inventory-message" role="status" aria-live="polite" hidden></p>
+                <p id="inventory-panel-summary" class="inventory-panel-summary" aria-live="polite">15 espacios · 5 × 3</p>
+                <button id="inventory-panel-close" class="icon-button hint-text-remove panel-close-button" type="button" aria-label="Cerrar inventario" title="Cerrar inventario">×</button>
+              </header>
+              <div id="inventory-items" class="inventory-items inventory-grid-board" role="grid" aria-label="Cuadrícula del inventario"></div>
+            </section>
+            <section id="character-panel" class="map-panel character-panel" aria-label="Personaje" aria-hidden="true" hidden>
+              <header class="inventory-panel-header"><h2 id="character-panel-heading">Personaje</h2><button id="character-panel-close" class="icon-button hint-text-remove" type="button" aria-label="Cerrar personaje" title="Cerrar">×</button></header>
+              <div id="character-panel-content" class="character-panel-content"></div>
+            </section>
+            <section id="pencil-panel" class="pencil-panel" aria-label="Pistas y notas" aria-hidden="true" hidden>
+              <header class="inventory-panel-header has-close">
+                <h2>Pistas y notas</h2>
+                <p id="pencil-message" class="inventory-message" role="status" aria-live="polite" hidden></p>
+                <button id="pencil-panel-close" class="icon-button hint-text-remove panel-close-button" type="button" aria-label="Cerrar pistas y notas" title="Cerrar pistas y notas">×</button>
+              </header>
+              <section class="inventory-panel-section" aria-labelledby="pencil-panel-clues-heading">
+                <h3 id="pencil-panel-clues-heading">Pistas</h3>
+                <div id="pencil-panel-hints" class="inventory-hints-board" aria-label="Pistas encontradas"></div>
+              </section>
+              <section class="inventory-panel-section inventory-panel-notes" aria-labelledby="pencil-panel-notes-heading">
+                <h3 id="pencil-panel-notes-heading">Notas</h3>
+                <div class="rich-text-field inventory-notes-field">
+                  <div id="pencil-panel-notes-toolbar" class="rich-toolbar" aria-label="Formato de las notas del jugador">
+<span class="ql-formats"><button class="ql-bold" type="button" aria-label="Negrita"></button><button class="ql-italic" type="button" aria-label="Cursiva"></button><button class="ql-list" type="button" value="bullet" aria-label="Lista con viñetas"></button><button class="ql-link" type="button" aria-label="Enlace"></button></span>
+                  </div>
+                  <div id="pencil-panel-notes-editor" class="inventory-notes-editor" aria-label="Notas libres del jugador"></div>
+                </div>
+              </section>
+            </section>
+            <section id="map-panel" class="map-panel" aria-label="Mapa" aria-hidden="true" hidden>
+              <header class="inventory-panel-header map-panel-header">
+                <h2>Mapa</h2>
+                <button id="map-panel-close" class="icon-button hint-text-remove" type="button" aria-label="Cerrar mapa" title="Cerrar mapa">×</button>
+              </header>
+              <div id="map-panel-artwork" class="map-panel-artwork" hidden>
+                <img id="map-panel-image" class="map-panel-image" alt="Mapa de la aventura" />
+                <div id="map-panel-grid" class="map-panel-grid" aria-label="Destinos disponibles en el mapa"></div>
+              </div>
+              <p id="map-panel-message" class="map-panel-placeholder" role="status" aria-live="polite">El diseñador aún no ha asignado una imagen al mapa.</p>
+            </section>
+            <section id="video-playback-panel" class="map-panel video-playback-panel" aria-label="Reproductor de vídeo" aria-hidden="true" hidden>
+              <header class="inventory-panel-header video-playback-header">
+                <h2 id="video-playback-title">Vídeo</h2>
+                <button id="video-playback-close" class="icon-button hint-text-remove video-playback-close" type="button" aria-label="Cerrar vídeo" title="Cerrar vídeo">×</button>
+              </header>
+              <video id="video-playback-element" class="video-playback-element" controls playsinline preload="metadata"></video>
+            </section>
+          </div>
+
+          <section id="choice-preview" class="choice-preview" aria-label="Vista previa de decisiones"></section>
+        </div>
+
+        <div class="canvas-footer">
+          <span class="key-hint"><kbd>Arrastrar</kbd> mueve una imagen</span>
+          <span class="key-hint"><kbd>Diálogo</kbd> se puede arrastrar</span>
+          <span class="key-hint"><kbd>Esquinas</kbd> imágenes proporcionales; diálogo por ancho y alto</span>
+          <span id="keyboard-movement-hint" class="key-hint"><kbd>← ↑ ↓ →</kbd> desplaza la imagen, el diálogo, «¿Qué decides?», la decisión o el combate enfocado</span>
+          <span class="key-hint"><kbd>Mayús</kbd> acelera el desplazamiento</span>
+        </div>
+
+      </section>
+
+      <aside id="authoring-panel" class="panel authoring-panel" aria-label="Menú de herramientas">
+        <div class="authoring-scroll">
+        <div class="panel-heading tools-menu-heading"><div><h2>Menú de herramientas</h2></div></div>
+        <div class="tool-tabs-strip">
+          <div id="tool-tabs" class="tablist" role="tablist" aria-label="Herramientas de edición">
+            <button class="tab" id="tab-dialogue" type="button" role="tab" draggable="true" title="Arrastra para reordenar" aria-selected="true" aria-controls="panel-dialogue" data-tab="dialogue">Diálogo</button>
+            <button class="tab" id="tab-decisions" type="button" role="tab" draggable="true" title="Arrastra para reordenar" aria-selected="false" aria-controls="panel-decisions" data-tab="decisions">Decisiones</button>
+            <button class="tab" id="tab-notes" type="button" role="tab" draggable="true" title="Arrastra para reordenar" aria-selected="false" aria-controls="panel-notes" data-tab="notes">Notas</button>
+            <button class="tab" id="tab-tool-resources" type="button" role="tab" draggable="true" title="Arrastra para reordenar" aria-selected="false" aria-controls="panel-tool-resources" data-tab="tool-resources">Recursos</button>
+<button class="tab" id="tab-canvas-style" type="button" role="tab" draggable="true" title="Arrastra para reordenar" aria-selected="false" aria-controls="panel-canvas-style" data-tab="canvas-style">Lienzo</button>
+            <button class="tab" id="tab-combats" type="button" role="tab" draggable="true" title="Arrastra para reordenar" aria-selected="false" aria-controls="panel-combats" data-tab="combats">Combates</button>
+            <button class="tab" id="tab-characters" type="button" role="tab" draggable="true" title="Arrastra para reordenar" aria-selected="false" aria-controls="panel-characters" data-tab="characters">Personajes</button>
+            <button class="tab" id="tab-quiz" type="button" role="tab" draggable="true" title="Arrastra para reordenar" aria-selected="false" aria-controls="panel-quiz" data-tab="quiz">Quiz</button>
+          </div>
+          <div class="module-tabs-pagination tool-tabs-pagination" role="group" aria-label="Paginación del menú de herramientas">
+            <button id="tool-tabs-prev" class="module-tabs-page-button" type="button" aria-label="Mostrar pestañas anteriores" title="Pestañas anteriores" aria-controls="tool-tabs" hidden>‹</button>
+            <button id="tool-tabs-next" class="module-tabs-page-button" type="button" aria-label="Mostrar más pestañas" title="Más pestañas" aria-controls="tool-tabs" hidden>›</button>
+          </div>
+        </div>
+
+        <section id="panel-dialogue" class="author-panel is-active" role="tabpanel" aria-labelledby="tab-dialogue" data-panel="dialogue">
+          <section class="tool-primary-section" aria-labelledby="dialogue-tool-heading">
+          <div class="panel-heading tool-primary-heading">
+            <h2 class="eyebrow" id="dialogue-tool-heading">Diálogo</h2>
+            <div class="tool-section-actions">
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-dialogue" aria-expanded="true" aria-controls="dialogue-tool-content" aria-label="Plegar diálogo" title="Plegar diálogo">▾</button>
+            </div>
+          </div>
+          <div id="dialogue-tool-content" class="collapsible-section-content">
+          <p class="helper-text">Añade y edita las cajas de diálogo de esta escena. Cada caja puede colocarse y ajustarse por separado en el lienzo.</p>
+          <div class="tool-section-add-row"><button id="add-dialogue" class="icon-button" type="button" aria-label="Añadir caja de diálogo" title="Añadir caja de diálogo">＋</button></div>
+          <p id="dialogue-empty-state" class="helper-text dialogue-empty-state" hidden>Esta escena no tiene cajas de diálogo. Pulsa ＋ para añadir una.</p>
+          <div id="dialogue-card-list" class="dialogue-card-list" aria-label="Cajas de diálogo de esta escena"></div>
+          <div id="dialogue-authoring-fields" class="dialogue-authoring-fields">
+          <div class="form-grid">
+            <label>
+              <span>Quien habla</span>
+<div id="speaker-control" class="speaker-control">
+<input id="speaker-input" type="text" placeholder="Personaje (opcional)" autocomplete="off" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="speaker-options" />
+<button id="speaker-dropdown-button" class="speaker-dropdown-button" type="button" aria-label="Mostrar personajes guardados" aria-haspopup="listbox" aria-expanded="false" aria-controls="speaker-options"><span aria-hidden="true">▾</span></button>
+<div id="speaker-options" class="speaker-options" role="listbox" aria-label="Personajes introducidos anteriormente" hidden></div>
+</div>
+            </label>
+            <label>
+              <span>Idioma <em>(BCP 47)</em></span>
+              <select id="language-input">
+                <option value="und">Detectar automáticamente</option>
+                <option value="es">Español</option>
+                <option value="ca">Català / Catalán</option>
+                <option value="eu">Euskara / Euskera</option>
+                <option value="gl">Galego / Gallego</option>
+                <option value="en">English / Inglés</option>
+                <option value="fr">Français / Francés</option>
+                <option value="de">Deutsch / Alemán</option>
+                <option value="it">Italiano</option>
+                <option value="pt">Português / Portugués</option>
+                <option value="nl">Nederlands / Neerlandés</option>
+                <option value="pl">Polski / Polaco</option>
+                <option value="ru">Русский / Ruso</option>
+                <option value="uk">Українська / Ucraniano</option>
+                <option value="tr">Türkçe / Turco</option>
+                <option value="ar">العربية / Árabe</option>
+                <option value="he">עברית / Hebreo</option>
+                <option value="fa">فارسی / Persa</option>
+                <option value="hi">हिन्दी / Hindi</option>
+                <option value="bn">বাংলা / Bengalí</option>
+                <option value="ja">日本語 / Japonés</option>
+                <option value="ko">한국어 / Coreano</option>
+                <option value="zh-Hans">中文（简体）/ Chino simplificado</option>
+                <option value="zh-Hant">中文（繁體）/ Chino tradicional</option>
+                <option value="th">ไทย / Tailandés</option>
+                <option value="vi">Tiếng Việt / Vietnamita</option>
+                <option value="id">Bahasa Indonesia / Indonesio</option>
+                <option value="sw">Kiswahili / Suajili</option>
+                <option value="custom">Otro idioma (código BCP 47)…</option>
+              </select>
+            </label>
+          </div>
+          <label id="language-custom-field" class="full-field" hidden>
+            <span>Código del otro idioma <em>(por ejemplo: qu, ast, sr-Latn)</em></span>
+            <input id="language-custom-input" type="text" placeholder="Código BCP 47" autocapitalize="off" autocomplete="off" spellcheck="false" />
+          </label>
+
+          <fieldset class="dialogue-alignment full-field">
+            <legend>Posición del diálogo</legend>
+            <label class="checkbox-option">
+              <input id="dialogue-center-horizontal" type="checkbox" />
+              <span>Centrar horizontalmente</span>
+            </label>
+            <label class="checkbox-option">
+              <input id="dialogue-center-vertical" type="checkbox" />
+              <span>Centrar verticalmente</span>
+            </label>
+          </fieldset>
+
+          <label class="full-field">
+            <span>Posición en capas <em>(1 queda al fondo)</em></span>
+            <input id="dialogue-z-index" type="number" min="1" step="1" />
+          </label>
+
+          <div class="rich-text-field">
+            <div id="dialogue-toolbar" class="rich-toolbar" aria-label="Formato del diálogo">
+              <span class="ql-formats">
+                <select class="ql-header" aria-label="Estilo de párrafo">
+                  <option selected></option><option value="1">Título</option><option value="2">Subtítulo</option>
+                </select>
+              </span>
+              <span class="ql-formats">
+                <button class="ql-bold" type="button" aria-label="Negrita"></button>
+                <button class="ql-italic" type="button" aria-label="Cursiva"></button>
+                <button class="ql-underline" type="button" aria-label="Subrayado"></button>
+                <button class="ql-background" type="button" value="#f7d471" aria-label="Resaltar"></button>
+              </span>
+              <span class="ql-formats">
+                <button class="ql-list" type="button" value="bullet" aria-label="Lista con viñetas"></button>
+                <button class="ql-list" type="button" value="ordered" aria-label="Lista numerada"></button>
+                <button class="ql-blockquote" type="button" aria-label="Cita"></button>
+                <button class="ql-link" type="button" aria-label="Enlace"></button>
+                <button class="ql-clean" type="button" aria-label="Quitar formato"></button>
+              </span>
+            </div>
+            <div id="dialogue-editor" class="rich-editor" data-editor-label="Texto del diálogo" lang="und" dir="auto"></div>
+          </div>
+          </div>
+</div>
+</section>
+<section class="tool-primary-section typography-section" aria-labelledby="dialogue-typography-heading">
+<div class="panel-heading tool-primary-heading">
+<h2 class="eyebrow" id="dialogue-typography-heading">Tipografía del diálogo</h2>
+<div class="tool-section-actions">
+<button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-dialogue-typography" aria-expanded="true" aria-controls="dialogue-typography-content" aria-label="Plegar tipografía del diálogo" title="Plegar tipografía del diálogo">▾</button>
+</div>
+</div>
+<div id="dialogue-typography-content" class="collapsible-section-content">
+            <div class="typography-grid">
+              <label>
+                <span>Familia tipográfica</span>
+                <select id="dialogue-font-family">
+                  <option value="">Predeterminada</option>
+                  <option value="Arial, Helvetica, sans-serif">Arial</option>
+                  <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                  <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                  <option value="'Trebuchet MS', Helvetica, sans-serif">Trebuchet MS</option>
+                  <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+                  <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                  <option value="'Courier New', Courier, monospace">Courier New</option>
+                  <option value="system-ui, sans-serif">System UI</option>
+                  <option value="custom">Personalizada…</option>
+                </select>
+              </label>
+              <label>
+                <span>Tamaño · px</span>
+                <input id="dialogue-font-size" type="number" min="8" max="96" step="1" placeholder="Predeterminado" />
+              </label>
+              <label>
+                <span>Color de fuente</span>
+                <input id="dialogue-style-text" type="color" />
+              </label>
+            </div>
+            <label id="dialogue-font-family-custom-field" class="typography-custom-field" hidden>
+              <span>Familia o pila tipográfica web</span>
+              <input id="dialogue-font-family-custom" type="text" placeholder="'Inter', Arial, sans-serif" autocomplete="off" />
+            </label>
+</div>
+</section>
+<section class="tool-primary-section decision-style-section" aria-labelledby="dialogue-style-heading">
+<div class="panel-heading tool-primary-heading">
+<h2 class="eyebrow" id="dialogue-style-heading">Estilo de los diálogos</h2>
+<div class="tool-section-actions">
+<button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-dialogue-style" aria-expanded="true" aria-controls="dialogue-style-content" aria-label="Plegar estilo de los diálogos" title="Plegar estilo de los diálogos">▾</button>
+</div>
+</div>
+<div id="dialogue-style-content" class="collapsible-section-content">
+            <div class="style-grid">
+              <label class="dialogue-background-field"><span>Fondo</span><select id="dialogue-style-bg-mode" class="quiz-select" aria-label="Fondo del diálogo"><option value="color">Color personalizado</option><option value="transparent">Transparente</option></select><input id="dialogue-style-bg" type="color" aria-label="Color de fondo del diálogo" /></label>
+              <label><span>Acento</span><input id="dialogue-style-accent" type="color" /></label>
+              <label><span>Borde</span><input id="dialogue-style-border" type="color" /></label>
+            </div>
+            <label class="full-field css-field">
+              <span>CSS personalizado de los diálogos</span>
+              <textarea id="dialogue-custom-css" rows="5" spellcheck="false" placeholder=".dialogue-box { border-radius: 0.8rem; }"></textarea>
+            </label>
+</div>
+</section>
+        </section>
+
+        <section id="panel-decisions" class="author-panel" role="tabpanel" aria-labelledby="tab-decisions" data-panel="decisions" hidden>
+          <section class="tool-primary-section" aria-labelledby="decisions-tool-heading">
+          <div class="panel-heading tool-primary-heading">
+            <h2 class="eyebrow" id="decisions-tool-heading">Decisiones</h2>
+            <div class="tool-section-actions">
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-decisions" aria-expanded="true" aria-controls="decisions-tool-content" aria-label="Plegar decisiones" title="Plegar decisiones">▾</button>
+            </div>
+          </div>
+          <div id="decisions-tool-content" class="collapsible-section-content">
+          <p class="helper-text">Define las opciones que verá el jugador y la escena a la que conduce cada una.</p>
+          <div class="tool-section-add-row"><button id="add-choice" class="icon-button" type="button" aria-label="Añadir decisión" title="Añadir decisión">＋</button></div>
+          <label class="full-field">
+            <span>Texto que invita a elegir</span>
+            <input id="decision-prompt" type="text" placeholder="¿Qué decides?" />
+          </label>
+          <div class="decision-prompt-style">
+            <label>
+              <span>Tamaño de «¿Qué decides?» · px</span>
+              <input id="decision-prompt-size" type="number" min="8" max="72" step="1" />
+            </label>
+            <label>
+              <span>Color de «¿Qué decides?»</span>
+              <input id="decision-prompt-color" type="color" />
+            </label>
+          </div>
+          <label class="final-scene-option">
+            <input id="scene-final-checkbox" type="checkbox" />
+            <span>Final</span>
+          </label>
+          <label class="full-field final-type-field">
+            <span>Tipo</span>
+            <select id="scene-final-type" disabled>
+              <option value="">Selecciona una valoración…</option>
+              <option value="Óptimo">Óptimo</option>
+              <option value="Bueno">Bueno</option>
+              <option value="Regular">Regular</option>
+              <option value="Malo">Malo</option>
+              <option value="Pésimo">Pésimo</option>
+            </select>
+          </label>
+<div id="choice-list" class="choice-list"></div>
+<p class="helper-text">Las opciones se pueden arrastrar y redimensionar en el escenario; al probar la escena conservan el enlace a la escena de destino. Asigna destinos desde cada decisión. Las escenas finales aparecen en rojo en el grafo.</p>
+</div>
+</section>
+<section class="tool-primary-section typography-section" aria-labelledby="decision-typography-heading">
+<div class="panel-heading tool-primary-heading">
+<h2 class="eyebrow" id="decision-typography-heading">Tipografía de las decisiones</h2>
+<div class="tool-section-actions">
+<button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-decision-typography" aria-expanded="true" aria-controls="decision-typography-content" aria-label="Plegar tipografía de las decisiones" title="Plegar tipografía de las decisiones">▾</button>
+</div>
+</div>
+<div id="decision-typography-content" class="collapsible-section-content">
+            <div class="typography-grid">
+              <label>
+                <span>Familia tipográfica</span>
+                <select id="decision-font-family">
+                  <option value="">Predeterminada</option>
+                  <option value="Arial, Helvetica, sans-serif">Arial</option>
+                  <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                  <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                  <option value="'Trebuchet MS', Helvetica, sans-serif">Trebuchet MS</option>
+                  <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+                  <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                  <option value="'Courier New', Courier, monospace">Courier New</option>
+                  <option value="system-ui, sans-serif">System UI</option>
+                  <option value="custom">Personalizada…</option>
+                </select>
+              </label>
+              <label>
+                <span>Tamaño · px</span>
+                <input id="decision-font-size" type="number" min="8" max="96" step="1" placeholder="Predeterminado" />
+              </label>
+              <label>
+                <span>Color de fuente</span>
+                <input id="decision-style-text" type="color" />
+              </label>
+            </div>
+            <label id="decision-font-family-custom-field" class="typography-custom-field" hidden>
+              <span>Familia o pila tipográfica web</span>
+              <input id="decision-font-family-custom" type="text" placeholder="'Inter', Arial, sans-serif" autocomplete="off" />
+            </label>
+</div>
+</section>
+<section class="tool-primary-section decision-style-section" aria-labelledby="decision-style-heading">
+<div class="panel-heading tool-primary-heading">
+<h2 class="eyebrow" id="decision-style-heading">Estilo de las decisiones</h2>
+<div class="tool-section-actions">
+<button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-decision-style" aria-expanded="true" aria-controls="decision-style-content" aria-label="Plegar estilo de las decisiones" title="Plegar estilo de las decisiones">▾</button>
+</div>
+</div>
+<div id="decision-style-content" class="collapsible-section-content">
+            <div class="style-grid">
+              <label class="dialogue-background-field"><span>Fondo</span><select id="decision-style-bg-mode" class="quiz-select" aria-label="Fondo de la decisión"><option value="color">Color personalizado</option><option value="transparent">Transparente</option></select><input id="decision-style-bg" type="color" aria-label="Color de fondo de la decisión" /></label>
+              <label><span>Acento</span><input id="decision-style-accent" type="color" /></label>
+              <label><span>Borde</span><input id="decision-style-border" type="color" /></label>
+            </div>
+            <label class="full-field css-field">
+              <span>CSS personalizado de las decisiones</span>
+              <textarea id="decision-custom-css" rows="5" spellcheck="false" placeholder=".choice-button { border-radius: 0.5rem; }"></textarea>
+            </label>
+</div>
+</section>
+        </section>
+
+        <section id="panel-notes" class="author-panel" role="tabpanel" aria-labelledby="tab-notes" data-panel="notes" hidden>
+          <div class="scene-notes-heading">
+            <h2 id="scene-notes-heading">Notas</h2>
+            <span class="helper-text">Solo para esta escena · se exportan con el proyecto</span>
+          </div>
+          <div class="rich-text-field scene-notes-field">
+            <div id="scene-notes-toolbar" class="rich-toolbar" aria-label="Formato de las notas de escena">
+              <span class="ql-formats">
+                <select class="ql-header" aria-label="Estilo de párrafo">
+                  <option selected></option><option value="1">Título</option><option value="2">Subtítulo</option>
+                </select>
+              </span>
+              <span class="ql-formats">
+                <button class="ql-bold" type="button" aria-label="Negrita"></button>
+                <button class="ql-italic" type="button" aria-label="Cursiva"></button>
+                <button class="ql-underline" type="button" aria-label="Subrayado"></button>
+                <button class="ql-background" type="button" value="#f7d471" aria-label="Resaltar"></button>
+              </span>
+              <span class="ql-formats">
+                <button class="ql-list" type="button" value="bullet" aria-label="Lista con viñetas"></button>
+                <button class="ql-list" type="button" value="ordered" aria-label="Lista numerada"></button>
+                <button class="ql-blockquote" type="button" aria-label="Cita"></button>
+                <button class="ql-link" type="button" aria-label="Enlace"></button>
+                <button class="ql-clean" type="button" aria-label="Quitar formato"></button>
+              </span>
+            </div>
+            <div id="scene-notes-editor" class="rich-editor" data-editor-label="Notas de esta escena" lang="und" dir="auto"></div>
+          </div>
+        </section>
+
+        <section id="panel-tool-resources" class="author-panel resource-tools-panel" role="tabpanel" aria-labelledby="tab-tool-resources" data-panel="tool-resources" hidden>
+          <section class="sidebar-section resource-editor-section sound-resource-section" aria-labelledby="sound-resource-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow" id="sound-resource-heading" data-rename-resource-section="sound">Sonido</p>
+              </div>
+              <div class="sound-section-actions">
+                <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="sound" aria-expanded="true" aria-controls="sound-resource-content" aria-label="Plegar sonido" title="Plegar sonido">▾</button>
+              </div>
+            </div>
+            <div id="sound-resource-content" class="collapsible-section-content">
+              <p class="helper-text">Sin imagen asociada, el sonido empieza al entrar en la escena. Si se vincula a una imagen, se reproduce al pulsar su icono en «Probar» o en el juego exportado.</p>
+              <div class="panel-heading compact"><h3>Eventos de sonido</h3><button id="add-sound-cue" class="icon-button" type="button" aria-label="Añadir sonido a esta escena" title="Añadir sonido">＋</button></div>
+              <div id="sound-cue-list" class="sound-cue-list" aria-label="Sonidos de esta escena"></div>
+            </div>
+          </section>
+          <section class="sidebar-section resource-editor-section video-resource-section" aria-labelledby="video-resource-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow" id="video-resource-heading" data-rename-resource-section="video">Vídeo</p></div>
+              <div class="sound-section-actions">
+                <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="video" aria-expanded="true" aria-controls="video-resource-content" aria-label="Plegar vídeo" title="Plegar vídeo">▾</button>
+              </div>
+            </div>
+            <div id="video-resource-content" class="collapsible-section-content">
+              <p class="helper-text">Un vídeo puede comenzar al iniciar la escena o aparecer superpuesto al pulsar el icono asociado a una imagen.</p>
+              <div class="panel-heading compact"><h3>Eventos de vídeo</h3><button id="add-video-cue" class="icon-button" type="button" aria-label="Añadir vídeo a esta escena" title="Añadir vídeo">＋</button></div>
+              <div id="video-cue-list" class="sound-cue-list" aria-label="Vídeos de esta escena"></div>
+            </div>
+          </section>
+          <section class="sidebar-section resource-editor-section timed-resource-section" aria-labelledby="timed-resource-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow" id="timed-resource-heading" data-rename-resource-section="transitions">Tiempos y transiciones</p>
+              </div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="transitions" aria-expanded="true" aria-controls="timed-resource-content" aria-label="Plegar tiempos y transiciones" title="Plegar tiempos y transiciones">▾</button>
+            </div>
+            <div id="timed-resource-content" class="collapsible-section-content">
+              <p class="helper-text">Programa cuándo empieza cada cambio y cuánto dura la transición. Por ejemplo: inicio a los 10 s y duración de 2 s = imagen nueva completamente visible a los 12 s.</p>
+              <div class="panel-heading compact">
+                <h3>Eventos temporizados</h3>
+                <button id="add-cue" class="icon-button" type="button" aria-label="Añadir cambio temporizado">＋</button>
+              </div>
+              <div id="cue-list" class="cue-list"></div>
+            </div>
+          </section>
+          <section class="sidebar-section object-resource-section" aria-labelledby="object-resource-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow" id="object-resource-heading">Objetos</p></div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="objects" aria-expanded="true" aria-controls="object-resource-content" aria-label="Plegar objetos" title="Plegar objetos">▾</button>
+            </div>
+            <div id="object-resource-content" class="collapsible-section-content">
+              <label class="full-field final-type-field" for="object-layer-select">
+                <span>Objeto de la escena</span>
+                <select id="object-layer-select" aria-label="Objeto de la escena"></select>
+              </label>
+<div class="object-attribute-editor">
+  <label class="full-field final-type-field" for="object-attribute-select">
+    <span>Atributos</span>
+    <select id="object-attribute-select" aria-label="Atributo del objeto"></select>
+  </label>
+  <div class="object-attribute-value-row">
+    <label class="full-field" for="object-attribute-value">
+      <span>Valor</span>
+      <input id="object-attribute-value" type="number" step="any" value="0" disabled />
+    </label>
+    <button id="add-object-attribute-value" class="icon-button" type="button" aria-label="Asignar atributo al objeto" title="Asignar atributo" disabled>＋</button>
+  </div>
+  <div id="object-attribute-list" class="object-attribute-list" aria-label="Atributos asignados al objeto"></div>
+</div>
+              <div class="object-flags">
+                <label class="object-flag-option" for="object-inventory-enabled">
+                  <input id="object-inventory-enabled" type="checkbox" disabled />
+                  <span>Inventario</span>
+                </label>
+                <label class="object-flag-option" for="object-combinable-enabled">
+                  <input id="object-combinable-enabled" type="checkbox" disabled />
+                  <span>Combinable</span>
+                </label>
+                <label class="object-flag-option" for="object-unique-enabled">
+                  <input id="object-unique-enabled" type="checkbox" disabled />
+                  <span>Único</span>
+                </label>
+                <label class="object-flag-option" for="object-character-enabled">
+                  <input id="object-character-enabled" type="checkbox" disabled />
+                  <span>Personaje</span>
+                </label>
+              </div>
+              <label id="object-character-link-field" class="full-field final-type-field" for="object-character-link" hidden>
+                <span>Personaje representado</span>
+                <select id="object-character-link" aria-label="Personaje representado"></select>
+              </label>
+              <section id="object-compatibility" class="object-compatibility" aria-labelledby="object-compatibility-heading" hidden>
+                <h3 id="object-compatibility-heading">Combinable con</h3>
+                <div id="object-compatibility-list" class="object-compatibility-list" role="group" aria-label="Recursos compatibles"></div>
+                <label class="full-field final-type-field" for="object-combination-result">
+                  <span>Resultado de la combinación</span>
+                  <select id="object-combination-result" aria-label="Resultado de la combinación"></select>
+                </label>
+              </section>
+              <p class="helper-text">Elige una imagen colocada. Activa «Combinable», marca los recursos compatibles y selecciona el resultado de la receta.</p>
+            </div>
+          </section>
+<section class="sidebar-section hint-resource-section" aria-labelledby="hint-resource-heading">
+<div class="panel-heading">
+<div><p class="eyebrow" id="hint-resource-heading">Pistas</p></div>
+<button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="hints" aria-expanded="true" aria-controls="hint-resource-content" aria-label="Plegar pistas" title="Plegar pistas">▾</button>
+</div>
+<div id="hint-resource-content" class="collapsible-section-content">
+<label class="full-field final-type-field" for="hint-layer-select">
+<span>Imagen de la escena</span>
+<select id="hint-layer-select" aria-label="Imagen de la escena para las pistas"></select>
+</label>
+<label class="object-flag-option hint-enabled-option" for="hint-enabled">
+<input id="hint-enabled" type="checkbox" disabled />
+<span>Pista</span>
+</label>
+<div class="panel-heading compact hint-list-heading">
+<h3>Textos de pista</h3>
+<button id="add-hint-text" class="icon-button" type="button" aria-label="Añadir texto de pista" disabled>＋</button>
+</div>
+<div id="hint-text-list" class="hint-text-list" aria-label="Textos que se añadirán al inventario"></div>
+<p class="helper-text">Al pulsar la lupa durante la partida, se guardan en el inventario los textos no vacíos de esta imagen.</p>
+</div>
+</section>
+          <section class="sidebar-section map-resource-section" aria-labelledby="map-resource-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow" id="map-resource-heading">Mapa</p></div>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="map-resource" aria-expanded="true" aria-controls="map-resource-content" aria-label="Plegar mapa" title="Plegar mapa">▾</button>
+            </div>
+            <div id="map-resource-content" class="collapsible-section-content">
+              <label class="full-field final-type-field" for="map-layer-select">
+                <span>Imagen de la escena</span>
+                <select id="map-layer-select" aria-label="Imagen de la escena para el mapa"></select>
+              </label>
+              <label class="object-flag-option map-enabled-option" for="map-layer-enabled">
+                <input id="map-layer-enabled" type="checkbox" disabled />
+                <span>Mapa</span>
+              </label>
+              <label class="full-field final-type-field" for="map-layer-cell">
+                <span>Casilla del mapa</span>
+                <select id="map-layer-cell" aria-label="Casilla del mapa para esta imagen" disabled></select>
+              </label>
+              <p class="helper-text">Activa Mapa y elige una casilla libre. Esa casilla enlazará con la escena de esta imagen y la ilustración aparecerá allí al descubrirla.</p>
+            </div>
+          </section>
+        </section>
+        <section id="panel-canvas-style" class="author-panel canvas-style-panel" role="tabpanel" aria-labelledby="tab-canvas-style" data-panel="canvas-style" hidden>
+          <section class="tool-primary-section" aria-labelledby="canvas-tool-heading">
+          <div class="panel-heading tool-primary-heading">
+            <h2 class="eyebrow" id="canvas-tool-heading">Lienzo</h2>
+            <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-canvas" aria-expanded="true" aria-controls="canvas-tool-content" aria-label="Plegar lienzo" title="Plegar lienzo">▾</button>
+          </div>
+          <div id="canvas-tool-content" class="collapsible-section-content">
+          <p class="helper-text">Ajusta el aspecto del lienzo y organiza sus columnas de maquetación.</p>
+          <label class="canvas-style-field" for="canvas-background-color">
+            <span>Color del lienzo</span>
+            <input id="canvas-background-color" type="color" value="#17131b" />
+          </label>
+          <label class="canvas-style-field canvas-columns-field" for="canvas-column-count">
+            <span>Columnas de maquetación</span>
+            <select id="canvas-column-count">
+              <option value="1">Una columna</option>
+              <option value="2">Dos columnas</option>
+              <option value="3">Tres columnas</option>
+              <option value="4">Cuatro columnas</option>
+            </select>
+          </label>
+          <label class="canvas-style-field" for="canvas-column-gap">
+            <span>Distancia entre columnas · px de lienzo</span>
+            <input id="canvas-column-gap" type="number" min="0" max="300" step="1" value="24" />
+          </label>
+          <fieldset class="canvas-column-borders">
+            <legend>Bordes por columna</legend>
+            <div id="canvas-column-borders" class="canvas-column-border-list"></div>
+          </fieldset>
+          <p class="helper-text">Las columnas son contenedores visuales para maquetar. No asignan ni mueven recursos: imágenes y sonidos siguen perteneciendo a la escena completa.</p>
+          <label class="canvas-background-global-option" for="canvas-background-exception">
+            <input id="canvas-background-exception" type="checkbox" />
+            <span>Exceptuar fondo general</span>
+          </label>
+          <label class="canvas-style-field final-type-field" for="canvas-background-image">
+            <span>Fondo de esta escena</span>
+            <select id="canvas-background-image" aria-label="Imagen de fondo específica de esta escena">
+              <option value="">Ninguna</option>
+            </select>
+          </label>
+          </div>
+          </section>
+          <section class="tool-primary-section" aria-labelledby="scene-tool-heading">
+            <div class="panel-heading tool-primary-heading">
+              <h2 class="eyebrow" id="scene-tool-heading">Escena</h2>
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-scene" aria-expanded="true" aria-controls="scene-tool-content" aria-label="Plegar escena" title="Plegar escena">▾</button>
+            </div>
+            <div id="scene-tool-content" class="collapsible-section-content">
+              <p class="helper-text">Configura una animación de entrada distinta para esta escena cuando quieras exceptuar la general.</p>
+              <label class="canvas-background-global-option" for="scene-transition-exception">
+                <input id="scene-transition-exception" type="checkbox" />
+                <span>Exceptuar animación general</span>
+              </label>
+              <label class="canvas-style-field final-type-field" for="scene-transition-animation">
+                <span>Animación de entrada de esta escena</span>
+                <select id="scene-transition-animation" aria-label="Animación de entrada específica de esta escena">
+                  <option value="none">Ninguna</option>
+                  <option value="fade-black">Fundido desde negro</option>
+                  <option value="fade-white">Fundido desde blanco</option>
+                  <option value="crossfade">Fundido cruzado (superposición)</option>
+                  <option value="slide-right">Desplazamiento desde la derecha</option>
+                </select>
+              </label>
+            </div>
+          </section>
+        </section>
+        <section id="panel-combats" class="author-panel quiz-panel combat-panel" role="tabpanel" aria-labelledby="tab-combats" data-panel="combats" hidden>
+          <section class="tool-primary-section" aria-labelledby="combats-tool-heading">
+          <div class="panel-heading tool-primary-heading">
+            <h2 class="eyebrow" id="combats-tool-heading">Combates</h2>
+            <div class="tool-section-actions">
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-combats" aria-expanded="true" aria-controls="combats-tool-content" aria-label="Plegar combates" title="Plegar combates">▾</button>
+            </div>
+          </div>
+          <div id="combats-tool-content" class="collapsible-section-content">
+          <p class="helper-text">Configura los atributos del enemigo, dados, rondas, vida y animaciones. El jugador compara sus valores con su ficha de personaje.</p>
+          <div class="tool-section-add-row"><button id="combat-add-button" class="icon-button" type="button" aria-label="Añadir combate" title="Añadir combate">＋</button></div>
+          <div id="combat-list" class="quiz-list combat-list" aria-live="polite"></div>
+          </div>
+          </section>
+          <section class="tool-primary-section" aria-labelledby="events-tool-heading">
+          <div class="panel-heading tool-primary-heading">
+            <h2 class="eyebrow" id="events-tool-heading">Eventos</h2>
+            <div class="tool-section-actions">
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-events" aria-expanded="true" aria-controls="events-tool-content" aria-label="Plegar eventos" title="Plegar eventos">▾</button>
+            </div>
+          </div>
+          <div id="events-tool-content" class="collapsible-section-content">
+          <p class="helper-text">Define eventos de escena, sus atributos de objeto y las condiciones que debe cumplir el jugador para superarlos.</p>
+          <div class="tool-section-add-row"><button id="event-add-button" class="icon-button" type="button" aria-label="Añadir evento" title="Añadir evento">＋</button></div>
+          <div id="event-list" class="quiz-list event-list" aria-live="polite"></div>
+          </div>
+          </section>
+        </section>
+        <section id="panel-characters" class="author-panel quiz-panel character-tools-panel" role="tabpanel" aria-labelledby="tab-characters" data-panel="characters" hidden>
+          <section class="tool-primary-section" aria-labelledby="characters-tool-heading">
+          <div class="panel-heading tool-primary-heading"><h2 class="eyebrow" id="characters-tool-heading">Personajes</h2><div class="tool-section-actions"><button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-characters" aria-expanded="true" aria-controls="characters-tool-content" aria-label="Plegar personajes" title="Plegar personajes">▾</button></div></div>
+          <div id="characters-tool-content" class="collapsible-section-content">
+          <p class="helper-text">Crea personajes y ajusta sus valores a partir de la ficha común del proyecto. Puedes vincularlos a una ilustración desde Recursos → Objetos.</p>
+          <div class="tool-section-add-row"><button id="character-add-button" class="icon-button" type="button" aria-label="Añadir personaje" title="Añadir personaje">＋</button></div>
+          <div id="character-list" class="quiz-list character-list" aria-live="polite"></div>
+          </div>
+          </section>
+        </section>
+        <section id="panel-quiz" class="author-panel quiz-panel" role="tabpanel" aria-labelledby="tab-quiz" data-panel="quiz" hidden>
+          <section class="tool-primary-section" aria-labelledby="quiz-tool-heading">
+          <div class="panel-heading tool-primary-heading">
+            <h2 class="eyebrow" id="quiz-tool-heading">Preguntas y respuestas</h2>
+            <div class="tool-section-actions">
+              <button class="sidebar-collapse-toggle" type="button" data-sidebar-toggle="tool-quiz" aria-expanded="true" aria-controls="quiz-tool-content" aria-label="Plegar Quiz" title="Plegar Quiz">▾</button>
+            </div>
+          </div>
+          <div id="quiz-tool-content" class="collapsible-section-content">
+          <p class="helper-text">Cada escena presenta sus retos en orden. El jugador responde con texto o elige un objeto del inventario y, si acierta, se ejecuta la consecuencia configurada.</p>
+          <div class="tool-section-add-row"><button id="quiz-add-button" class="icon-button" type="button" aria-label="Añadir pregunta" title="Añadir pregunta">＋</button></div>
+          <div id="quiz-list" class="quiz-list" aria-live="polite"></div>
+          </div>
+          </section>
+        </section>
+        </div>
+        <button id="toggle-authoring-panel" class="panel-edge-toggle panel-edge-toggle-authoring" type="button" data-workspace-panel-toggle="authoring" aria-expanded="true" aria-controls="authoring-panel" aria-label="Ocultar panel de edición" title="Ocultar panel de edición">
+          <span class="workspace-panel-toggle-icon" aria-hidden="true">▸</span>
+        </button>
+      </aside>
+    </main>
+
+    <footer class="app-footer">
+      <p>El proyecto se guarda automáticamente en este navegador. Usa «Exportar proyecto» para guardar una copia editable en JSON, o elige HTML único/paquete ZIP para la web.</p>
+      <p id="accessibility-status" aria-live="polite"></p>
+    </footer>
+
+    <dialog id="welcome-dialog" class="about-dialog welcome-dialog" aria-labelledby="welcome-heading" aria-describedby="welcome-copy">
+      <div class="about-dialog-content welcome-dialog-content">
+        <div class="about-dialog-heading">
+          <img class="brand-mark brand-logo" src="Logo/Logo.svg" alt="" aria-hidden="true" />
+          <div>
+            <p class="eyebrow">IDE de diseño narrativo</p>
+            <h2 id="welcome-heading">Crowther</h2>
+          </div>
+        </div>
+        <div id="welcome-copy" class="welcome-copy">
+          <p>Bienvenido a Crowther, un IDE de diseño narrativo hecho por Jacobo Feijóo para crear aventuras de ficción interactiva.</p>
+          <p>Puedes usarlo en tu ordenador u <em>online</em> para construir aventuras. Admite hiperenlaces, sonidos, gestión de inventario e imágenes. Su funcionamiento es intuitivo y es ligero.</p>
+          <p>¡Disfrútalo!</p>
+        </div>
+        <div class="welcome-actions">
+          <label class="welcome-no-show" for="welcome-do-not-show">
+            <input id="welcome-do-not-show" type="checkbox" />
+            <span>No volver a mostrar</span>
+          </label>
+          <button id="welcome-close-button" class="button button-primary" type="button">Empezar</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="character-setup-dialog" class="about-dialog character-setup-dialog" aria-labelledby="character-setup-heading">
+      <form id="character-setup-form" class="about-dialog-content character-setup-content">
+        <div class="about-dialog-heading"><div><p class="eyebrow">PREPARA TU AVENTURA</p><h2 id="character-setup-heading">Configura tu personaje</h2></div></div>
+        <label class="full-field" for="player-character-name"><span>Nombre</span><input id="player-character-name" type="text" maxlength="80" autocomplete="nickname" value="Jugador" /></label>
+        <p id="character-setup-points" class="character-setup-points" aria-live="polite"></p>
+        <div id="character-setup-attributes" class="character-setup-attributes"></div>
+        <div class="welcome-actions"><button id="character-setup-start" class="button button-primary" type="submit">Comenzar aventura</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-heading">
+      <div class="about-dialog-content">
+        <div class="about-dialog-heading">
+          <img class="brand-mark brand-logo" src="Logo/Logo.svg" alt="" aria-hidden="true" />
+          <div>
+            <p class="eyebrow">Librojuego digital</p>
+            <h2 id="about-heading">Crowther</h2>
+          </div>
+        </div>
+        <p>Editor para crear una ficción interactiva visual o un librojuego.</p>
+        <p class="helper-text">Los datos permanecen en tu navegador hasta que exportas el proyecto o su versión web.</p>
+        <p class="helper-text about-version">©Jacobo Feijóo. Versión 1.0.0</p>
+        <p class="helper-text about-license">Crowther se distribuye bajo la GNU GPL versión 3. Puedes redistribuir y modificar el IDE bajo estas condiciones; se ofrece sin garantía. Las copias y versiones modificadas deben conservar el crédito © Jacobo Feijóo en About. <a href="LICENSE" target="_blank" rel="noopener">Licencia GPLv3</a> · <a href="COPYRIGHT-ATTRIBUTION.txt" target="_blank" rel="noopener">Condición de atribución</a> · <a href="RUNTIME-LICENSE-EXCEPTION.txt" target="_blank" rel="noopener">Excepción para juegos exportados</a>.</p>
+        <form method="dialog" class="about-actions">
+          <button class="button button-primary" type="submit">Cerrar</button>
+        </form>
+      </div>
+    </dialog>
+
+    <dialog id="new-project-dialog" class="about-dialog new-project-dialog" aria-labelledby="new-project-heading" aria-describedby="new-project-help">
+      <div class="about-dialog-content">
+        <div class="about-dialog-heading">
+          <span class="brand-mark" aria-hidden="true">＋</span>
+          <div>
+            <p class="eyebrow">Proyecto actual</p>
+            <h2 id="new-project-heading">¿Empezar una aventura nueva?</h2>
+          </div>
+        </div>
+        <p id="new-project-help">Crowther mantiene un único proyecto activo en el navegador. «Guardar y nuevo» guardará el actual y descargará una copia editable JSON para poder recuperarlo después. «Descartar y nuevo» lo sustituirá sin crear esa copia.</p>
+        <div class="new-project-actions">
+          <button class="button button-primary" type="button" data-new-project-action="save">Guardar y nuevo</button>
+          <button class="button button-ghost" type="button" data-new-project-action="discard">Descartar y nuevo</button>
+          <button class="button button-ghost" type="button" data-new-project-action="cancel">Cancelar</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="resource-transfer-dialog" class="resource-transfer-dialog" aria-labelledby="resource-transfer-heading" aria-describedby="resource-transfer-message">
+      <div class="resource-transfer-content">
+        <p class="eyebrow">Recurso entre escenas</p>
+        <h2 id="resource-transfer-heading">¿Mover o copiar?</h2>
+        <p id="resource-transfer-message">Elige qué hacer con este recurso.</p>
+        <div class="resource-transfer-actions">
+          <button class="button button-ghost" type="button" data-resource-transfer-action="move">Mover</button>
+          <button class="button button-primary" type="button" data-resource-transfer-action="copy">Copiar</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="web-export-dialog" class="about-dialog web-export-dialog" aria-labelledby="web-export-heading" aria-describedby="web-export-help">
+      <div class="about-dialog-content">
+        <div class="about-dialog-heading">
+          <span class="brand-mark" aria-hidden="true">⇩</span>
+          <div>
+            <p class="eyebrow">Exportar juego</p>
+            <h2 id="web-export-heading">Elige el formato web</h2>
+          </div>
+        </div>
+        <p id="web-export-help">El HTML único es más sencillo de mover. El paquete ZIP separa código, estilos, datos e imágenes para publicarlo como sitio estático.</p>
+        <div class="export-format-options">
+          <button class="export-format-choice" type="button" data-web-export-mode="single">
+            <strong>Archivo único HTML</strong>
+            <span>Un archivo descargable y fácil de compartir o subir.</span>
+          </button>
+          <button class="export-format-choice" type="button" data-web-export-mode="hosting">
+            <strong>Paquete para hosting · ZIP</strong>
+            <span>HTML, JavaScript, CSS, datos e imágenes en carpetas separadas.</span>
+          </button>
+        </div>
+        <form method="dialog" class="about-actions">
+          <button class="button button-ghost" type="submit">Cancelar</button>
+        </form>
+      </div>
+    </dialog>
+
+    <style id="custom-css-preview"></style>
+    <script src="vendor/quill/quill.min.js?v=2026-11-07-03"></script>
+    <script src="vendor/cytoscape.min.js"></script>
+<script type="module" src="js/app.js?v=2026-11-12-10"></script>
+  </body>
+</html>

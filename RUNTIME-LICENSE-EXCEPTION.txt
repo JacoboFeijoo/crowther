@@ -1,0 +1,24 @@
+EXCEPCIÓN DE LICENCIA DEL RUNTIME DE CROWTHER PARA AVENTURAS
+
+Copyright © 2026 Jacobo Feijóo.
+
+Esta es una autorización adicional conforme a la sección 7 de GNU GPLv3.
+Se aplica únicamente al runtime de Crowther distribuido con una aventura
+exportada, no al IDE como producto ni a su código fuente por separado.
+
+Se permite combinar y distribuir el runtime de Crowther que acompaña una
+exportación con el contenido independiente de una aventura y elegir para esa
+aventura los términos de distribución que decida su creador, incluso términos
+distintos de GPLv3, siempre que:
+
+1. Se conserve en la aventura un crédito visible y accesible: «Motor Crowther
+   · © Jacobo Feijóo», junto con un acceso a estos avisos de licencia.
+2. No se sugiera que Jacobo Feijóo respalda la aventura o sus modificaciones.
+3. Se mantengan los avisos y licencias de Quill y de cualquier otro componente
+   de terceros incluido en la exportación.
+
+Esta excepción no cambia la licencia GPLv3 de Crowther cuando el IDE o el
+runtime se distribuyen por separado, ni concede derechos sobre contenido
+aportado por terceros. El creador conserva la responsabilidad de fijar y
+comunicar la licencia de los textos, imágenes, sonidos, vídeos y demás
+materiales propios de su aventura.

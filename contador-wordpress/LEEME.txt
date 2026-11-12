@@ -1,0 +1,40 @@
+CONTADOR INDEPENDIENTE PARA WORDPRESS — CROWTHER
+================================================
+
+Este paquete está separado del IDE y de «001. Release v.1». El plugin no se
+copia dentro de Crowther ni se ejecuta hasta que lo instales y conectes.
+
+INSTALACIÓN DEL PLUGIN
+----------------------
+1. En WordPress, ve a Plugins > Añadir plugin > Subir plugin.
+2. Sube crowther-visit-counter.zip y pulsa Instalar y Activar.
+   Alternativamente, por FTP, copia la carpeta crowther-visit-counter dentro
+   de /www/wp-content/plugins/ y actívala desde WordPress.
+3. Abre Ajustes > Visitas de Crowther.
+4. Indica el correo de destino, el origen exacto de la web (por ejemplo,
+   https://www.ejemplo.com, sin /crowther) y cada cuántos días informar.
+5. Pulsa «Enviar informe de prueba» para comprobar que WordPress puede enviar
+   correo.
+
+CONEXIÓN DE LA WEB PUBLICADA
+----------------------------
+En la pantalla de ajustes, el plugin muestra una línea <script>. Añádela al
+index.html ya publicado en /www/crowther, justo antes de </body>. Es una
+integración independiente y deliberada: no está en la release ni en su
+generador. Si sustituyes ese index.html al actualizar Crowther, vuelve a
+añadir esa línea.
+
+QUÉ CUENTA Y PRIVACIDAD
+-----------------------
+Cuenta como máximo una carga por pestaña del navegador y día; son visitas
+aproximadas, no personas únicas. No guarda IP, nombre, correo del visitante,
+cookie ni la ruta visitada: solo totales diarios en WordPress. El hosting
+puede mantener sus propios registros de acceso, fuera del control del plugin.
+Actualiza el aviso de privacidad de tu web según corresponda.
+
+ENVÍOS PROGRAMADOS
+------------------
+El intervalo se elige en días (1–365). WordPress usa WP-Cron, que se activa
+cuando hay tráfico y puede retrasarse en webs con pocas visitas. Para una hora
+más fiable, configura el cron del hosting para ejecutar wp-cron.php con la
+frecuencia adecuada. El plugin no modifica Newsletter ni otras extensiones.

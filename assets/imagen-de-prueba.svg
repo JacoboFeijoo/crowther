@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-label="Imagen de prueba para Escena Viva">
+  <defs>
+    <linearGradient id="cielo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5d4080" />
+      <stop offset="1" stop-color="#e79f5f" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#cielo)" />
+  <circle cx="620" cy="116" r="62" fill="#ffe6a9" />
+  <path d="M0 330 C160 270 310 375 475 310 S700 287 800 250 V450 H0Z" fill="#182d42" />
+  <text x="48" y="83" font-family="Georgia, serif" font-size="38" fill="#fff5de">Imagen cargada correctamente</text>
+</svg>

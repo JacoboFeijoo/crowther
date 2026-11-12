@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "Si utilizas Crowther en un proyecto, cita esta versión."
+title: "Crowther: IDE de diseño narrativo para librojuegos digitales"
+version: 1.0.0
+date-released: 2026-11-12
+authors:
+  - family-names: Feijóo
+    given-names: Jacobo
+license: GPL-3.0-only
+repository-code: https://github.com/JacoboFeijoo/crowther
+abstract: >-
+  IDE web en español para diseñar, probar y exportar aventuras de ficción
+  interactiva y librojuegos digitales.

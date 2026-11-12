@@ -1,0 +1,16 @@
+Crowther — IDE de diseño narrativo
+
+Copyright © 2026 Jacobo Feijóo.
+
+Crowther se distribuye bajo GNU General Public License, versión 3 (GPLv3).
+Este archivo forma parte de los avisos legales del proyecto.
+
+Condición adicional de atribución (GPLv3, sección 7(b)): al redistribuir
+Crowther o una versión modificada, conserva el aviso visible «© Jacobo Feijóo»
+en la pantalla About o en un área equivalente de avisos legales accesible a
+quienes usan el programa. No presentes una versión modificada como aprobada
+o respaldada por el autor.
+
+La atribución no transfiere al autor derechos sobre contenido creado por
+terceros o por usuarios de Crowther. Las marcas, bibliotecas y otros
+componentes de terceros conservan sus propios avisos y licencias.

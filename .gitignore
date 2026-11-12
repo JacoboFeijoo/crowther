@@ -1,0 +1,19 @@
+# Copias locales, material de prueba y paquetes generados
+/backups/
+/.codebase-memory/
+/001. Release v.1/
+/001. Release v.1 - backup/
+/001. Release v.1 - copia/
+/Imagenes prueba/
+/Abrir Escena Viva.cmd
+/Crowther.mp4
+/Logo/Logo.cdr
+/protocol_context v.2.json
+/contador-wordpress/*.zip
+
+# Archivos del sistema y temporales
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.tmp
